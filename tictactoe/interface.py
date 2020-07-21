@@ -11,9 +11,6 @@ player2 = Player(0, "Dolor", "Sit")
 # initializing the binder to connect the interface to the database
 binder = Binder()
 
-# initializing the game board
-game_board = GameBoard()
-
 
 # MainFrame: first  and main frame to be init
 class Mainframe(Tk):
@@ -186,6 +183,9 @@ class GameFrame(GenericFrame):
         # setting the window size
         master.geometry("350x350")
 
+        # initializing the game board
+        self.game_board = GameBoard()
+
         # initializing current_player and turn_count
         self.current_player = None
         self.turn_count = 1
@@ -249,20 +249,28 @@ class GameFrame(GenericFrame):
         # waiting 0.1s
         self.master.after(100)
         # check if cell is taken, if not take it, update the game state and check if the game ended in a win or a tie
-        if game_board.check_cell(x, y, signs.get(self.current_player.sign)):
+        if self.game_board.check_cell(x, y, signs.get(self.current_player.sign)):
             messagebox.showinfo(message="Position already taken!")
         else:
             self.buttons[y][x]['text'] = signs.get(self.current_player.sign)
             self.turn_count += 1
             self.turn_label['text'] = "Turn: " + str(self.turn_count)
             self.current_player_label['text'] = "Current Player: " + self.current_player.username
-            if game_board.check_game_end(signs.get(self.current_player.sign)):
+            # in case of winning
+            if self.game_board.check_game_end(signs.get(self.current_player.sign)):
                 messagebox.showinfo(message=self.current_player.username + " wins this game!!!")
                 db.increase_score(self.current_player.username)
-                self.close_game()
+                if messagebox.askyesno(message="Do you want to play another game?"):
+                    self.switch_frame(GameFrame)
+                else:
+                    self.close_game()
             elif self.turn_count == 10:
                 messagebox.showinfo(message="Game ended in a Tie!")
-                self.close_game()
+                if messagebox.askyesno(message="Do you want to play another game?"):
+                    self.turn_label['text'] = "Turn: "
+                    self.switch_frame(GameFrame)
+                else:
+                    self.close_game()
             else:
                 # if the game has not ended change current_player to the other player
                 if self.current_player == player1:
@@ -278,7 +286,7 @@ class GameFrame(GenericFrame):
 
     # make the best possible move as an AI
     def ai_move(self):
-        best_move = player2.best_move(game_board)
+        best_move = player2.best_move(self.game_board)
         self.make_play(best_move[0], best_move[1])
 
 
